@@ -16,20 +16,20 @@ import (
 
 type Block struct {
 	Pos       int
-	Data      BookCheckout
+	Data      certificateCheckout
 	Timestamp string
 	Hash      string
 	PrevHash  string
 }
 
-type BookCheckout struct {
-	BookID       string `json:"book_id"`
+type certificateCheckout struct {
+	certificateID       string `json:"certificate_id"`
 	User         string `json:"user"`
 	CheckoutDate string `json:"checkout_date"`
 	IsGenesis    bool   `json:"is_genesis"`
 }
 
-type Book struct {
+type certificate struct {
 	ID          string `json:"id"`
 	Title       string `json:"title"`
 	Author      string `json:"author"`
@@ -47,7 +47,7 @@ func (b *Block) generateHash() {
 	b.Hash = hex.EncodeToString(hash.Sum(nil))
 }
 
-func CreateBlock(prevBlock *Block, checkoutItem BookCheckout) *Block {
+func CreateBlock(prevBlock *Block, checkoutItem certificateCheckout) *Block {
 	block := &Block{}
 	block.Pos = prevBlock.Pos + 1
 	block.Timestamp = time.Now().String()
@@ -64,7 +64,7 @@ type Blockchain struct {
 
 var BlockChain *Blockchain
 
-func (bc *Blockchain) AddBlock(data BookCheckout) {
+func (bc *Blockchain) AddBlock(data certificateCheckout) {
 
 	prevBlock := bc.blocks[len(bc.blocks)-1]
 
@@ -76,7 +76,7 @@ func (bc *Blockchain) AddBlock(data BookCheckout) {
 }
 
 func GenesisBlock() *Block {
-	return CreateBlock(&Block{}, BookCheckout{IsGenesis: true})
+	return CreateBlock(&Block{}, certificateCheckout{IsGenesis: true})
 }
 
 func NewBlockchain() *Blockchain {
@@ -119,7 +119,7 @@ func getBlockchain(w http.ResponseWriter, r *http.Request) {
 }
 
 func writeBlock(w http.ResponseWriter, r *http.Request) {
-	var checkoutItem BookCheckout
+	var checkoutItem certificateCheckout
 	if err := json.NewDecoder(r.Body).Decode(&checkoutItem); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("could not write Block: %v", err)
@@ -139,24 +139,24 @@ func writeBlock(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-func newBook(w http.ResponseWriter, r *http.Request) {
-	var book Book
-	if err := json.NewDecoder(r.Body).Decode(&book); err != nil {
+func newcertificate(w http.ResponseWriter, r *http.Request) {
+	var certificate certificate
+	if err := json.NewDecoder(r.Body).Decode(&certificate); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("could not create: %v", err)
-		w.Write([]byte("could not create new Book"))
+		w.Write([]byte("could not create new certificate"))
 		return
 	}
 
 	h := md5.New()
-	io.WriteString(h, book.ISBN+book.PublishDate)
-	book.ID = fmt.Sprintf("%x", h.Sum(nil))
+	io.WriteString(h, certificate.ISBN+certificate.PublishDate)
+	certificate.ID = fmt.Sprintf("%x", h.Sum(nil))
 
-	resp, err := json.MarshalIndent(book, "", " ")
+	resp, err := json.MarshalIndent(certificate, "", " ")
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		log.Printf("could not marshal payload: %v", err)
-		w.Write([]byte("could not save book data"))
+		w.Write([]byte("could not save certificate data"))
 		return
 	}
 	w.WriteHeader(http.StatusOK)
@@ -170,7 +170,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", getBlockchain).Methods("GET")
 	r.HandleFunc("/", writeBlock).Methods("POST")
-	r.HandleFunc("/new", newBook).Methods("POST")
+	r.HandleFunc("/new", newcertificate).Methods("POST")
 
 	go func() {
 
